@@ -69,25 +69,6 @@ class DatabaseSettings(BaseSettings):
         return v
 
 
-class SupabaseSettings(BaseSettings):
-    """Supabase project settings."""
-
-    model_config = SettingsConfigDict(env_prefix="SUPABASE_", env_file=".env", extra="ignore")
-
-    url: str = Field(..., description="Supabase project URL")
-    service_role_key: SecretStr = Field(..., description="Service role key (server-side only)")
-    storage_bucket: str = Field(default="support-documents")
-
-
-class RedisSettings(BaseSettings):
-    """Redis connection settings (Upstash REST)."""
-
-    model_config = SettingsConfigDict(env_prefix="REDIS_", env_file=".env", extra="ignore")
-
-    upstash_rest_url: SecretStr = Field(..., validation_alias="UPSTASH_REDIS_REST_URL", description="Upstash Redis REST URL")
-    upstash_rest_token: SecretStr = Field(..., validation_alias="UPSTASH_REDIS_REST_TOKEN", description="Upstash Redis REST Token")
-    key_prefix: str = Field(default="support-ai:")
-    default_ttl: int = Field(default=3600, description="Default TTL in seconds")
 
 
 class GeminiSettings(BaseSettings):
@@ -145,49 +126,6 @@ class ChunkSettings(BaseSettings):
     min_size: int = Field(default=50)
 
 
-class RateLimitSettings(BaseSettings):
-    """Rate limiting settings."""
-
-    model_config = SettingsConfigDict(env_prefix="RATE_LIMIT_", env_file=".env", extra="ignore")
-
-    enabled: bool = Field(default=True)
-    chat_per_minute: int = Field(default=20)
-    upload_per_hour: int = Field(default=10)
-    global_concurrent: int = Field(default=100)
-
-
-class WorkerSettings(BaseSettings):
-    """Celery worker settings."""
-
-    model_config = SettingsConfigDict(env_prefix="CELERY_", env_file=".env", extra="ignore")
-
-    broker_url: SecretStr = Field(default=SecretStr("redis://localhost:6379/1"))
-    result_backend: SecretStr = Field(default=SecretStr("redis://localhost:6379/2"))
-    worker_concurrency: int = Field(default=4)
-    task_max_retries: int = Field(default=3)
-
-
-class StorageSettings(BaseSettings):
-    """File upload / storage settings."""
-
-    model_config = SettingsConfigDict(env_prefix="", env_file=".env", extra="ignore")
-
-    max_upload_size_mb: int = Field(default=50)
-    allowed_mime_types: list[str] = Field(
-        default_factory=lambda: ["application/pdf"]
-    )
-    storage_path_prefix: str = Field(default="documents")
-
-    @field_validator("allowed_mime_types", mode="before")
-    @classmethod
-    def parse_mimes(cls, v: Any) -> list[str]:
-        if isinstance(v, str):
-            return json.loads(v)
-        return v  # type: ignore[return-value]
-
-    @property
-    def max_upload_size_bytes(self) -> int:
-        return self.max_upload_size_mb * 1024 * 1024
 
 
 class SecuritySettings(BaseSettings):
@@ -221,15 +159,10 @@ class Settings:
     def __init__(self) -> None:
         self.app = AppSettings()
         self.database = DatabaseSettings()
-        self.supabase = SupabaseSettings()
-        self.redis = RedisSettings()
         self.gemini = GeminiSettings()
         self.embedding = EmbeddingSettings()
         self.rag = RAGSettings()
         self.chunk = ChunkSettings()
-        self.rate_limit = RateLimitSettings()
-        self.worker = WorkerSettings()
-        self.storage = StorageSettings()
         self.security = SecuritySettings()
         self.observability = ObservabilitySettings()
 

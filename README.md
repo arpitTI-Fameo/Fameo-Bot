@@ -1,29 +1,33 @@
 # AI Support Bot Backend
 
-Production-grade AI Support Backend with RAG over PDF/document knowledge bases.
+A streamlined AI Support Backend with Retrieval-Augmented Generation (RAG) over document knowledge bases.
 
 ## Architecture
 
-- **API**: FastAPI (async, stateless, horizontally scalable)
-- **Database**: Supabase PostgreSQL + pgvector
-- **Cache/Broker**: Redis
-- **Workers**: Celery (async document ingestion)
-- **LLM**: Gemini SDK (behind provider abstraction)
-- **Embeddings**: Sentence Transformers (swappable via config)
+This project was recently simplified to focus purely on the core RAG and chat flow. Background workers, rate limiting, and conversational tracking have been stripped out for maximum clarity.
+
+- **API**: FastAPI (async, stateless)
+- **Database**: Supabase PostgreSQL + `pgvector`
+- **LLM**: Gemini (via `google-genai` SDK)
+- **Embeddings**: Sentence Transformers (runs locally to avoid API latency)
+
+### The Flow
+1. **Query:** User sends a query to the `/chat` endpoint.
+2. **Embed:** The `sentence-transformers` model (cached in memory on startup) converts the query into a vector.
+3. **Retrieve:** The RAG module runs a similarity search against the Supabase `pgvector` database to find the most relevant document chunks.
+4. **Generate:** The chunks and query are sent to the Gemini API, which generates a grounded response.
 
 ## Quick Start
 
 ### Prerequisites
 - Python 3.12+
-- Docker & Docker Compose
-- Supabase project (PostgreSQL + Storage)
-- Redis
+- Supabase project (PostgreSQL)
 
 ### Setup
 
 ```bash
 # Clone and enter
-cd support-ai
+cd support_ai.egg-info
 
 # Create .env from template
 cp .env.example .env
@@ -32,37 +36,8 @@ cp .env.example .env
 # Install dependencies
 pip install -e ".[dev]"
 
-# Run database migrations
-alembic upgrade head
-
 # Start development server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Docker
-
-```bash
-# Build and run all services
-docker compose up --build
-
-# Run API only
-docker compose up support-api
-
-# Run worker only
-docker compose up support-worker
-```
-
-### Testing
-
-```bash
-# All tests
-pytest
-
-# Unit tests only
-pytest tests/unit/ -v
-
-# With coverage
-pytest --cov=app --cov-report=html
 ```
 
 ## API Endpoints
@@ -70,13 +45,8 @@ pytest --cov=app --cov-report=html
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/api/v1/health` | Liveness probe |
-| GET | `/api/v1/ready` | Readiness probe |
+| GET | `/api/v1/ready` | Readiness probe (checks DB) |
 | POST | `/api/v1/chat` | Chat with RAG |
-| POST | `/api/v1/conversations` | Create conversation |
-| GET | `/api/v1/conversations` | List conversations |
-| POST | `/api/v1/documents` | Upload document |
-| POST | `/api/v1/ingestion/jobs` | Trigger ingestion |
-| POST | `/api/v1/feedback` | Submit feedback |
 
 ## Project Structure
 
@@ -86,20 +56,9 @@ support-ai/
 │   ├── api/               # HTTP layer (routers, schemas, dependencies)
 │   ├── core/              # Cross-cutting (config, logging, security, middleware)
 │   ├── database/          # Models, repositories, connection
-│   ├── modules/           # Domain logic (chat, rag, documents, llm, etc.)
-│   ├── integrations/      # External providers (Gemini, Supabase, Redis)
-│   ├── workers/           # Celery tasks
+│   ├── modules/           # Domain logic (chat, rag, llm, embeddings)
+│   ├── integrations/      # External providers (Gemini)
 │   └── prompts/           # LLM prompt templates
 ├── alembic/               # Database migrations
-├── tests/                 # Test suite
-├── scripts/               # Operational scripts
-└── docs/                  # Documentation
+├── scripts/               # Operational scripts (e.g. test_chat.py)
 ```
-
-## Documentation
-
-- [Architecture](docs/architecture.md)
-- [API Reference](docs/api.md)
-- [RAG Pipeline](docs/rag.md)
-- [Deployment](docs/deployment.md)
-- [Operations](docs/operations.md)
