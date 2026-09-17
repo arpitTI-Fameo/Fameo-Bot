@@ -1,0 +1,13 @@
+Summarize the following conversation between a user and a support assistant. Capture:
+1. The main topics discussed
+2. Key questions asked by the user
+3. Important answers or solutions provided
+4. Any unresolved issues
+5. Action items or follow-ups mentioned
+
+Keep the summary concise (under 200 words) and factual. Do not add information not present in the conversation.
+
+## CONVERSATION
+{conversation}
+
+## SUMMARY
